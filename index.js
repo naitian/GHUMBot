@@ -55,7 +55,7 @@ function authenticate(credentials){//where credentials is the user's credentials
                 var dictAr = message.body.toLowerCase().split(" ")
                 dict.translate(dictAr[1], dictAr[2], dictAr[3], (data) => {
                     var url = dictAr[1] + dictAr[2] + ".dict.cc/?s=" + dictAr[3]
-                    api.sendMessage("Top definition: " + data[0].to + " = " + data[0].from + "\nView more definitions at: " + url, message.threadID, (err, api) => {console.log(err)})
+                    api.sendMessage("Top definition: " + data[0].to + " = " + data[0].from, message.threadID, (err, api) => {console.log(err)})
                 }) 
                
             }
