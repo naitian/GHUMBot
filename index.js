@@ -39,16 +39,21 @@ function authenticate(credentials){
 
         var dictAr = message.body.toLowerCase().split(' ');
         dictAr.shift();
+        if(dictAr.length < 3)
+          api.sendMessage('Oh no! An error occurred!',
+              message.threadID,
+              (err, api) => {console.log(err);});
         var url = `http://${dictAr[0] + dictAr[1]}.dict.cc/?s=`;
         dict.translate(dictAr.shift(), dictAr.shift(), dictAr.join('+'), (data, err) => {
           if(err) {
             api.sendMessage('Oh no! An error occurred!',
               message.threadID,
               (err, api) => {console.log(err);});
+            return;
           }
          if(data !== null){
            let msg = {
-             body: 'Top definition: ' + data[0].to + ' = ' + data[0].from,
+             body: 'Top definition: ' + data[0].from + ' = ' + data[0].to,
            };
            api.sendMessage(msg, message.threadID, (err, api) => {console.log(err);});
          }
