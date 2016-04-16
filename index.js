@@ -51,7 +51,7 @@ function authenticate(credentials){
               (err, api) => {console.log(err);});
             return;
           }
-         if(data !== null){
+         if(data !== null && data.length > 0){
            let msg = {
              body: 'Top definition: ' + data[0].from + ' = ' + data[0].to,
            };
