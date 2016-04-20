@@ -7,6 +7,7 @@ console.log('Enter your Facebook credentials - ' +
 
 
 
+
 //where credentials is the user's credentials as an object, fields `email` and `password
 function authenticate(credentials){
   'use strict';
@@ -28,7 +29,7 @@ function authenticate(credentials){
       if(message.type !== 'message')
         return;
 
-      console.log('Got a message from', message.senderName, ':', message.body);
+      console.log('Got a message from', message.senderID, ':', message.body);
       if(message.body.indexOf('!wquote') > -1) {
         var data = fs.readFileSync('quotes.txt', 'utf8');
         var re = /\n\d+\./;
@@ -42,25 +43,25 @@ function authenticate(credentials){
         if(dictAr.length < 3)
           api.sendMessage('Oh no! An error occurred!',
               message.threadID,
-              (err, api) => {console.log(err);});
-        var url = `http://${dictAr[0] + dictAr[1]}.dict.cc/?s=`;
+              (err) => {console.log(err);});
         dict.translate(dictAr.shift(), dictAr.shift(), dictAr.join('+'), (data, err) => {
           if(err) {
+            console.log(err);
             api.sendMessage('Oh no! An error occurred!',
               message.threadID,
-              (err, api) => {console.log(err);});
+              (err) => {console.log(err);});
             return;
           }
          if(data !== null && data.length > 0){
            let msg = {
              body: 'Top definition: ' + data[0].from + ' = ' + data[0].to,
            };
-           api.sendMessage(msg, message.threadID, (err, api) => {console.log(err);});
+           api.sendMessage(msg, message.threadID, (err) => {console.log(err);});
          }
          else
            api.sendMessage('Oh no! No definitions found.',
             message.threadID,
-            (err, api) => {console.log(err);});
+            (err) => {console.log(err);});
         }); 
       }
       if(message.body.toLowerCase().indexOf('!ship') > -1){
@@ -75,14 +76,29 @@ function authenticate(credentials){
           '\n─────────(ღ)██(ღ) ɓυт αηƴтɪɱє ƴσυ ηєє∂ α ƒʀɪєη∂,' + 
           '\n───────────(ღ) __ ɪ\'ʟʟ ʝυѕт ɓє ɱє.\n',
            message.threadID,
-           (err, api) => {console.log(err);});
+           (err) => {console.log(err);});
       }
-
+      if(message.body.toLowerCase().indexOf('!help') > -1){
+        api.sendMessage('GHUM Bot Help!' + 
+          '\nAll commands are preceded by a \'!\'' +
+          '\nCommands:' + 
+          '\n\tdict <from> <to> <term>' + 
+          '\n\twquote' + 
+          '\n\tship' + 
+          '\n\thelp',
+           message.threadID,
+           (err) => {console.log(err);});
+      }
+      // if(message.body.toLowerCase().indexOf('!deutsch') > -1){
+      //   api.changeThreadColor('#000',
+      //     message.threadID, 
+      //     (err) => {if(err) console.log(err);});
+      // }          
     });
-
   });
 
 }
+
 
 prompt.start();
 prompt.get([{
