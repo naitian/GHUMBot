@@ -26,9 +26,8 @@ function authenticate(credentials){
       if(err)
         return console.log(err);
 
-      if(message.type !== 'message')
+      if(message.type !== 'message' || !message.body)
         return;
-
       console.log('Got a message from', message.senderID, ':', message.body);
       if(message.body.indexOf('!wquote') > -1) {
         var data = fs.readFileSync('quotes.txt', 'utf8');
