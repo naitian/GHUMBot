@@ -47,13 +47,15 @@ function authenticate(credentials){
 
         var dictAr = message.body.toLowerCase().split(' ');
         dictAr.shift();
-        if(dictAr.length < 3)
+        if(dictAr.length < 3) {
           api.sendMessage('Oh no! An error occurred!',
             message.threadID,
             (err) => {
               if(err)
                 console.log(err);
             });
+          return;
+        }
         dict.translate(dictAr.shift(), dictAr.shift(), dictAr.join('+'), (data, err) => {
           if(err) {
             console.log(err);
