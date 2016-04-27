@@ -18,12 +18,26 @@ function authenticate(credentials){
 
     api.setOptions({
       logLevel: 'silent',
-      selfListen: false //uncomment this line if you want messages from yourself
+      selfListen: false,
+      listenEvents: true
     });
 
     api.listen(function(err, message) {//this function is called whenever we get a message
       if(err)
         return console.log(err);
+
+
+      if(message.type === 'typ') {
+        api.getUserInfo(message.from, (err, res) => {
+          if (err) {
+            console.log(err);
+          }
+          else {
+            console.log(res[message.from].name + ' was typing in thread ' + message.threadID);
+          }
+        });
+      }
+
 
       if(message.type !== 'message' || !message.body)
         return;
@@ -31,14 +45,14 @@ function authenticate(credentials){
 
 
       if(message.body.indexOf('!wquote') === 0) {
-        var data = fs.readFileSync('quotes.txt', 'utf8');
-        var re = /\n\d+\./;
-        var split = data.split(re);
+        let data = fs.readFileSync('quotes.txt', 'utf8');
+        const re = /\n\d+\./;
+        let split = data.split(re);
         api.sendMessage(split[Math.floor(Math.random() * (split.length - 1))], 
           message.threadID,
           (err) => {
             if(err)
-              console.log(err);
+              return console.log(err);
           });
       }
 
@@ -52,7 +66,7 @@ function authenticate(credentials){
             message.threadID,
             (err) => {
               if(err)
-                console.log(err);
+                return console.log(err);
             });
           return;
         }
@@ -63,7 +77,7 @@ function authenticate(credentials){
               message.threadID,
               (err) => {
                 if(err)
-                  console.log(err);
+                  return console.log(err);
               });
             return;
           }
@@ -78,7 +92,7 @@ function authenticate(credentials){
               message.threadID,
               (err) => {
                 if(err)
-                  console.log(err);
+                  return console.log(err);
               });
         }); 
       }
@@ -97,7 +111,7 @@ function authenticate(credentials){
             message.threadID,
             (err) => {
               if(err)
-                console.log(err);
+                return console.log(err);
             });
         }
         else
@@ -114,8 +128,48 @@ function authenticate(credentials){
             message.threadID,
             (err) => {
               if(err)
-                console.log(err);
+                return console.log(err);
             });
+      }
+
+      if(message.body.indexOf('!note') === 0) {
+        let args = message.body.split(' ');
+        console.log(args);
+        if(args.length < 0) {
+          api.sendMessage('Oh no, an error occurred!',
+            message.threadID,
+            (err) => {
+              if(err)
+                return console.log(err);
+            });
+        }
+        else {
+          let name = args[1];
+          console.log(name);
+          api.getThreadInfo(message.threadID, (err, res) => {
+            if(err)
+              return console.log(err);
+            else {
+              let pid = res.participantIDs;
+              for (var i = 0; i < pid.length; i++) {
+                api.getUserInfo(pid[i], (err, res) => {
+                  if(err)
+                    return console.log(err);
+                  else {
+                    let id = Object.keys(res)[0];
+                    res = res[Object.keys(res)[0]];
+
+                    if(res.name.toLowerCase().indexOf(name.toLowerCase()) > -1) {
+                      console.log('Best match for ' + name  + ' is ' + res.name + '. ID: ' +
+                       id);
+                      
+                    }
+                  }
+                });
+              }
+            }
+          });
+        }
       }
 
 
@@ -125,14 +179,16 @@ function authenticate(credentials){
           '\nCommands:' + 
           '\n\tdict <from> <to> <term>' + 
           '\n\twquote' + 
-          '\n\tship' + 
+          '\n\tship [name1 name2]' + 
           '\n\thelp',
           message.threadID,
           (err) => {
             if(err)
-              console.log(err);
+              return console.log(err);
           });
       }
+
+
       // if(message.body.toLowerCase().indexOf('!deutsch') === 0){
       //   api.changeThreadColor('#000',
       //     message.threadID, 
