@@ -28,14 +28,38 @@ function authenticate(credentials){
 
 
       if(message.type === 'typ') {
+
         api.getUserInfo(message.from, (err, res) => {
+
           if (err) {
             console.log(err);
           }
           else {
             console.log(res[message.from].name + ' was typing in thread ' + message.threadID);
+            try {
+              let notes = JSON.parse(fs.readFileSync('notes.json', 'utf8'));
+              if (notes[message.from].length > 0) {
+                let response = 'Hey, ' + res[message.from].name + '! Here are some notes for you!\n';
+                while (notes[message.from][0]) {
+                  response += '\t"'  + notes[message.from][0] + '"\n';
+                  notes[message.from].shift();
+                }
+               api.sendMessage(response,
+                message.from,
+                (err) => {
+                  if(err)
+                    return console.log(err);
+                });
+               fs.writeFileSync('notes.json', JSON.stringify(notes));
+              }
+            } catch (err) {
+              console.log(err);
+            }
+           
           }
+          
         });
+
       }
 
 
@@ -48,6 +72,7 @@ function authenticate(credentials){
         let data = fs.readFileSync('quotes.txt', 'utf8');
         const re = /\n\d+\./;
         let split = data.split(re);
+        console.log(message.threadID);
         api.sendMessage(split[Math.floor(Math.random() * (split.length - 1))], 
           message.threadID,
           (err) => {
@@ -134,7 +159,6 @@ function authenticate(credentials){
 
       if(message.body.indexOf('!note') === 0) {
         let args = message.body.split(' ');
-        console.log(args);
         if(args.length < 0) {
           api.sendMessage('Oh no, an error occurred!',
             message.threadID,
@@ -144,7 +168,16 @@ function authenticate(credentials){
             });
         }
         else {
-          let name = args[1];
+          let name = args[1] + ' ' + args[2];
+          let note = args.slice(3).join(' ');
+          if (!note) {
+            api.sendMessage('No note specified!',
+              message.threadID,
+              (err) => {
+                if(err)
+                  return console.log(err);
+              });
+          }
           console.log(name);
           api.getThreadInfo(message.threadID, (err, res) => {
             if(err)
@@ -162,7 +195,28 @@ function authenticate(credentials){
                     if(res.name.toLowerCase().indexOf(name.toLowerCase()) > -1) {
                       console.log('Best match for ' + name  + ' is ' + res.name + '. ID: ' +
                        id);
-                      
+                      try {
+                        let notes = JSON.parse(fs.readFileSync('notes.json', 'utf8'));
+                        if (notes[id]) {
+                          notes[id].push(note);
+                        }
+                        else {
+                          notes[id] = [note];
+                        }
+                        fs.writeFileSync('notes.json', JSON.stringify(notes));
+                      } catch (err) {
+                        let notes = {};
+                        notes[id] = [note];
+                        fs.writeFileSync('notes.json', JSON.stringify(notes));
+                      }
+
+                      api.sendMessage('Note for ' + res.name + ' set.',
+                        message.threadID,
+                        (err) => {
+                          if(err)
+                            return console.log(err);
+                        });
+
                     }
                   }
                 });
