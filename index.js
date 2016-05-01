@@ -2,12 +2,157 @@ var login = require('facebook-chat-api');
 var prompt = require('prompt');
 var fs = require('fs');
 var dict = require('dictcc-js');
+var Bot = require('./bot.js');
+
+
+function sendMessage(message, api, threadID, callback) {
+  'use strict';
+  api.sendMessage(message, threadID, (err) => {
+    if(err)
+      return console.log(err);
+    else if(callback)
+      return callback(err);
+  });
+}
+
+function wquote(args, api, message) {
+  'use strict';
+  let data = fs.readFileSync('quotes.txt', 'utf8');
+  const re = /\n\d+\./;
+  let split = data.split(re);
+  sendMessage(split[Math.floor(Math.random() * (split.length - 1))], api, message.threadID);
+}
+
+function dictcc(args, api, message) {
+  'use strict';
+  if (args < 3) 
+    return sendMessage('Oh no! Check your arguments.', message.threadID);
+
+  //Translates the text using the dictionary.
+  dict.translate(args.shift(), args.shift(), args.join('+'), (data, err) => {
+    if (err) {
+      console.log(err);
+      return sendMessage('Oh no! An error occurred!', message.threadID);
+    }
+    if(data !== null && data.length > 0){
+      let msg = {
+        body: 'Top definition: ' + data[0].from + ' = ' + data[0].to,
+      };
+      return sendMessage(msg, api, message.threadID);
+    }
+    else
+      return sendMessage('Oh no! No definitions found.', api, message.threadID);
+  }); 
+}
+
+function ship(args, api, message) {
+  'use strict';
+  //Filters out "and"s from the arguments. Note: determine if this is a good idea.
+  args = args.filter((value) => {return value !== 'and';});
+
+  //Checks if there are still 2 names to ship
+  if(args.length >= 2) {
+    sendMessage(args[0] + ' and ' + args[1] + 
+      '\nsittin\' in a tree,' + 
+      '\nK-I-S-S-I-N-G.' + 
+      '\nFirst comes love,' + 
+      '\nThen comes marriage,' + 
+      '\nThen comes a baby' + 
+      '\nIn a baby carriage.', 
+      api,
+      message.threadID);
+  }
+  else
+
+    //Sends a generic heart
+    sendMessage('────(ღ)(ღ)(ღ)────(ღ)(ღ)(ღ) __ ɪƒ ƴσυ\'ʀє αʟσηє,' + 
+      '\n──(ღ)██████(ღ)(ღ)██████(ღ) ɪ\'ʟʟ ɓє ƴσυʀ ѕɧα∂σѡ.' + 
+      '\n─(ღ)████████(ღ)████████(ღ) ɪƒ ƴσυ ѡαηт тσ cʀƴ,' + 
+      '\n─(ღ)██████████████████(ღ) ɪ\'ʟʟ ɓє ƴσυʀ ѕɧσυʟ∂єʀ.' + 
+      '\n──(ღ)████████████████(ღ) ɪƒ ƴσυ ѡαηт α ɧυɢ,' + 
+      '\n────(ღ)████████████(ღ) __ ɪ\'ʟʟ ɓє ƴσυʀ ρɪʟʟσѡ.' + 
+      '\n──────(ღ)████████(ღ) ɪƒ ƴσυ ηєє∂ тσ ɓє ɧαρρƴ,' + 
+      '\n────────(ღ)████(ღ) __ ɪ\'ʟʟ ɓє ƴσυʀ ѕɱɪʟє.' + 
+      '\n─────────(ღ)██(ღ) ɓυт αηƴтɪɱє ƴσυ ηєє∂ α ƒʀɪєη∂,' + 
+      '\n───────────(ღ) __ ɪ\'ʟʟ ʝυѕт ɓє ɱє.\n',
+      api,
+      message.threadID);
+}
+
+function note(args, api, message) {
+  'use strict';
+  if(args.length < 0) {
+    sendMessage('Oh no, an error occurred!',
+      api,
+      message.threadID);
+  }
+  else {
+    let name = args[0];
+    let note = args.slice(1).join(' ');
+    if (!note) {
+      sendMessage('No note specified!',
+        api,
+        message.threadID);
+    }
+    api.getThreadInfo(message.threadID, (err, res) => {
+      if(err)
+        return console.log(err);
+      else {
+        let pid = res.participantIDs;
+        for (var i = 0; i < pid.length; i++) {
+          api.getUserInfo(pid[i], (err, res) => {
+            if(err)
+              return console.log(err);
+            else {
+              let id = Object.keys(res)[0];
+              res = res[Object.keys(res)[0]];
+
+              if(res.name.toLowerCase().indexOf(name.toLowerCase()) > -1) {
+                console.log('Best match for ' + name  + ' is ' + res.name + '. ID: ' +
+                 id);
+                try {
+                  let notes = JSON.parse(fs.readFileSync('notes.json', 'utf8'));
+                  if (notes[id]) {
+                    notes[id].push(note);
+                  }
+                  else {
+                    notes[id] = [note];
+                  }
+                  fs.writeFileSync('notes.json', JSON.stringify(notes));
+                } catch (err) {
+                  let notes = {};
+                  notes[id] = [note];
+                  fs.writeFileSync('notes.json', JSON.stringify(notes));
+                }
+
+                api.sendMessage('Note for ' + res.name + ' set.',
+                  message.threadID,
+                  (err) => {
+                    if(err)
+                      return console.log(err);
+                  });
+              }
+            }
+          });
+        }
+      }
+    });
+  }
+}
+
 
 
 //where credentials is the user's credentials as an object, fields `email` and `password
 function authenticate(credentials){
   'use strict';
   login(credentials, function(err, api) {
+
+
+    let gb = new Bot('GHUM Bot');
+    gb.command('!wquote', wquote, '!wquote')
+      .command('!dict', dictcc, '!dict <from> <to> <text>')
+      .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
+      .command('!note', note, '!note <name> <note>');
 
     if(err) return console.error(err);
 
@@ -67,191 +212,33 @@ function authenticate(credentials){
         return;
       console.log('Got a message from', message.senderID, ':', message.body);
 
-
-      if(message.body.indexOf('!wquote') === 0) {
-        let data = fs.readFileSync('quotes.txt', 'utf8');
-        const re = /\n\d+\./;
-        let split = data.split(re);
-        console.log(message.threadID);
-        api.sendMessage(split[Math.floor(Math.random() * (split.length - 1))], 
-          message.threadID,
-          (err) => {
-            if(err)
-              return console.log(err);
-          });
-      }
+      gb.run(message.body, api, message);
 
 
-      if(message.body.toLowerCase().indexOf('!dict') === 0){
 
-        var dictAr = message.body.toLowerCase().split(' ');
-        dictAr.shift();
-        if(dictAr.length < 3) {
-          api.sendMessage('Oh no! An error occurred!',
-            message.threadID,
-            (err) => {
-              if(err)
-                return console.log(err);
-            });
-          return;
-        }
-        dict.translate(dictAr.shift(), dictAr.shift(), dictAr.join('+'), (data, err) => {
-          if(err) {
-            console.log(err);
-            api.sendMessage('Oh no! An error occurred!',
-              message.threadID,
-              (err) => {
-                if(err)
-                  return console.log(err);
-              });
-            return;
-          }
-          if(data !== null && data.length > 0){
-            let msg = {
-              body: 'Top definition: ' + data[0].from + ' = ' + data[0].to,
-            };
-            api.sendMessage(msg, message.threadID, (err) => {console.log(err);});
-          }
-          else
-            api.sendMessage('Oh no! No definitions found.',
-              message.threadID,
-              (err) => {
-                if(err)
-                  return console.log(err);
-              });
-        }); 
-      }
-
-
-      if(message.body.toLowerCase().indexOf('!ship') === 0){
-        let args = message.body.split(' ').slice(1);
-        if(args.length >= 2) {
-          api.sendMessage(args[0] + ' and ' + args[1] + 
-            '\nsittin\' in a tree,' + 
-            '\nK-I-S-S-I-N-G.' + 
-            '\nFirst comes love,' + 
-            '\nThen comes marriage,' + 
-            '\nThen comes a baby' + 
-            '\nIn a baby carriage.', 
-            message.threadID,
-            (err) => {
-              if(err)
-                return console.log(err);
-            });
-        }
-        else
-          api.sendMessage('────(ღ)(ღ)(ღ)────(ღ)(ღ)(ღ) __ ɪƒ ƴσυ\'ʀє αʟσηє,' + 
-            '\n──(ღ)██████(ღ)(ღ)██████(ღ) ɪ\'ʟʟ ɓє ƴσυʀ ѕɧα∂σѡ.' + 
-            '\n─(ღ)████████(ღ)████████(ღ) ɪƒ ƴσυ ѡαηт тσ cʀƴ,' + 
-            '\n─(ღ)██████████████████(ღ) ɪ\'ʟʟ ɓє ƴσυʀ ѕɧσυʟ∂єʀ.' + 
-            '\n──(ღ)████████████████(ღ) ɪƒ ƴσυ ѡαηт α ɧυɢ,' + 
-            '\n────(ღ)████████████(ღ) __ ɪ\'ʟʟ ɓє ƴσυʀ ρɪʟʟσѡ.' + 
-            '\n──────(ღ)████████(ღ) ɪƒ ƴσυ ηєє∂ тσ ɓє ɧαρρƴ,' + 
-            '\n────────(ღ)████(ღ) __ ɪ\'ʟʟ ɓє ƴσυʀ ѕɱɪʟє.' + 
-            '\n─────────(ღ)██(ღ) ɓυт αηƴтɪɱє ƴσυ ηєє∂ α ƒʀɪєη∂,' + 
-            '\n───────────(ღ) __ ɪ\'ʟʟ ʝυѕт ɓє ɱє.\n',
-            message.threadID,
-            (err) => {
-              if(err)
-                return console.log(err);
-            });
-      }
-
-      if(message.body.indexOf('!note') === 0) {
-        let args = message.body.split(' ');
-        if(args.length < 0) {
-          api.sendMessage('Oh no, an error occurred!',
-            message.threadID,
-            (err) => {
-              if(err)
-                return console.log(err);
-            });
-        }
-        else {
-          let name = args[1] + ' ' + args[2];
-          let note = args.slice(3).join(' ');
-          if (!note) {
-            api.sendMessage('No note specified!',
-              message.threadID,
-              (err) => {
-                if(err)
-                  return console.log(err);
-              });
-          }
-          console.log(name);
-          api.getThreadInfo(message.threadID, (err, res) => {
-            if(err)
-              return console.log(err);
-            else {
-              let pid = res.participantIDs;
-              for (var i = 0; i < pid.length; i++) {
-                api.getUserInfo(pid[i], (err, res) => {
-                  if(err)
-                    return console.log(err);
-                  else {
-                    let id = Object.keys(res)[0];
-                    res = res[Object.keys(res)[0]];
-
-                    if(res.name.toLowerCase().indexOf(name.toLowerCase()) > -1) {
-                      console.log('Best match for ' + name  + ' is ' + res.name + '. ID: ' +
-                       id);
-                      try {
-                        let notes = JSON.parse(fs.readFileSync('notes.json', 'utf8'));
-                        if (notes[id]) {
-                          notes[id].push(note);
-                        }
-                        else {
-                          notes[id] = [note];
-                        }
-                        fs.writeFileSync('notes.json', JSON.stringify(notes));
-                      } catch (err) {
-                        let notes = {};
-                        notes[id] = [note];
-                        fs.writeFileSync('notes.json', JSON.stringify(notes));
-                      }
-
-                      api.sendMessage('Note for ' + res.name + ' set.',
-                        message.threadID,
-                        (err) => {
-                          if(err)
-                            return console.log(err);
-                        });
-
-                    }
-                  }
-                });
-              }
-            }
-          });
-        }
-      }
-
-
-      if(message.body.toLowerCase().indexOf('!help') === 0){
-        api.sendMessage('GHUM Bot Help!' + 
-          '\nAll commands are preceded by a \'!\'' +
-          '\nCommands:' + 
-          '\n\tdict <from> <to> <term>' + 
-          '\n\twquote' + 
-          '\n\tship [name1 name2]' + 
-          '\n\thelp',
-          message.threadID,
-          (err) => {
-            if(err)
-              return console.log(err);
-          });
-      }
-
-
-      // if(message.body.toLowerCase().indexOf('!deutsch') === 0){
-      //   api.changeThreadColor('#000',
-      //     message.threadID, 
-      //     (err) => {if(err) console.log(err);});
-      // }          
+      // if(message.body.toLowerCase().indexOf('!help') === 0){
+      //   api.sendMessage('GHUM Bot Help!' + 
+      //     '\nAll commands are preceded by a \'!\'' +
+      //     '\nCommands:' + 
+      //     '\n\tdict <from> <to> <term>' + 
+      //     '\n\twquote' + 
+      //     '\n\tship [name1 name2]' + 
+      //     '\n\thelp',
+      //     message.threadID,
+      //     (err) => {
+      //       if(err)
+      //         return console.log(err);
+      //     });
+      // }
+         
     });
   });
 
 }
+
+
+
+
 
 try {
   authenticate({appState: JSON.parse(fs.readFileSync('appstate.json', 'utf8'))});

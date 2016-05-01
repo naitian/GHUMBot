@@ -19,6 +19,7 @@
   "dependencies": {
     "dictcc-js": "^1.0.0",
     "facebook-chat-api": "^1.0.8",
-    "prompt": "^1.0.0"
+    "prompt": "^1.0.0",
+    "string-argv": "0.0.2"
   }
 }
