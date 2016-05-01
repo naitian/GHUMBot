@@ -32,12 +32,12 @@ module.exports = class Bot {
   }
 
   help(args, api, message) {
-    console.log(this);
-    console.log(this.scripts);
     if (args.length > 0) {
       if (this.scripts.get(args[0])) {
+        console.log(args[0]);
+        console.log(this.scripts.get(args[0]));
         api.sendMessage(this.name + ' Help!' + 
-          '\n\t' + this.scripts.get(args[0].usage),
+          '\n\t' + this.scripts.get(args[0]).usage,
           message.threadID,
           (err) => { if (err) return console.log(err); });
       }

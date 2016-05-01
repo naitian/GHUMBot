@@ -213,23 +213,6 @@ function authenticate(credentials){
       console.log('Got a message from', message.senderID, ':', message.body);
 
       gb.run(message.body, api, message);
-
-
-
-      // if(message.body.toLowerCase().indexOf('!help') === 0){
-      //   api.sendMessage('GHUM Bot Help!' + 
-      //     '\nAll commands are preceded by a \'!\'' +
-      //     '\nCommands:' + 
-      //     '\n\tdict <from> <to> <term>' + 
-      //     '\n\twquote' + 
-      //     '\n\tship [name1 name2]' + 
-      //     '\n\thelp',
-      //     message.threadID,
-      //     (err) => {
-      //       if(err)
-      //         return console.log(err);
-      //     });
-      // }
          
     });
   });
