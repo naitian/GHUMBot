@@ -20,7 +20,13 @@ function wquote(args, api, message) {
   let data = fs.readFileSync('quotes.txt', 'utf8');
   const re = /\n\d+\./;
   let split = data.split(re);
-  sendMessage(split[Math.floor(Math.random() * (split.length - 1))], api, message.threadID);
+  let index = Math.floor(Math.random() * (split.length - 1));
+  if (args.length > 0) {
+    let number = parseInt(args[0]);
+    if(!isNaN(number) && number >= 1 && number <= split.length)
+      index = parseInt(args[0]) - 1;
+  }
+  sendMessage(index + 1 + '. ' + split[index], api, message.threadID);
 }
 
 function dictcc(args, api, message) {
