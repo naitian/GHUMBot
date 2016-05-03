@@ -15,6 +15,7 @@ function sendMessage(message, api, threadID, callback) {
   });
 }
 
+
 function wquote(args, api, message) {
   'use strict';
   let data = fs.readFileSync('quotes.txt', 'utf8');
@@ -32,13 +33,13 @@ function wquote(args, api, message) {
 function dictcc(args, api, message) {
   'use strict';
   if (args < 3) 
-    return sendMessage('Oh no! Check your arguments.', message.threadID);
+    return sendMessage('Oh no! Check your arguments.', api, message.threadID);
 
   //Translates the text using the dictionary.
   dict.translate(args.shift(), args.shift(), args.join('+'), (data, err) => {
     if (err) {
       console.log(err);
-      return sendMessage('Oh no! An error occurred!', message.threadID);
+      return sendMessage('Oh no! An error occurred!', api, message.threadID);
     }
     if(data !== null && data.length > 0){
       let msg = {
@@ -87,7 +88,8 @@ function ship(args, api, message) {
 
 function note(args, api, message) {
   'use strict';
-  if(args.length < 0) {
+  // Make sure correct number of arguments
+  if(args.length >= 2) {
     sendMessage('Oh no, an error occurred!',
       api,
       message.threadID);
@@ -145,6 +147,7 @@ function note(args, api, message) {
     });
   }
 }
+
 
 
 
