@@ -89,7 +89,7 @@ function ship(args, api, message) {
 function note(args, api, message) {
   'use strict';
   // Make sure correct number of arguments
-  if(args.length >= 2) {
+  if(args.length < 2) {
     sendMessage('Oh no, an error occurred!',
       api,
       message.threadID);
@@ -133,12 +133,7 @@ function note(args, api, message) {
                   fs.writeFileSync('notes.json', JSON.stringify(notes));
                 }
 
-                api.sendMessage('Note for ' + res.name + ' set.',
-                  message.threadID,
-                  (err) => {
-                    if(err)
-                      return console.log(err);
-                  });
+                sendMessage('Note for ' + res.name + ' set.', api, message.threadID);
               }
             }
           });
@@ -198,12 +193,7 @@ function authenticate(credentials){
                   response += '\t"'  + notes[message.from][0] + '"\n';
                   notes[message.from].shift();
                 }
-               api.sendMessage(response,
-                message.from,
-                (err) => {
-                  if(err)
-                    return console.log(err);
-                });
+               sendMessage(response, api, message.from);
                fs.writeFileSync('notes.json', JSON.stringify(notes));
               }
             } catch (err) {
