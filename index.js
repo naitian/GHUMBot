@@ -170,8 +170,101 @@ function authenticate(credentials){
 
     console.log('Logged in'); //we've authenticated
 
+    let tests = {
+      '!wquote-no-arg': {
+        'message':'!wquote',
+        'event':{
+          'type': 'message',
+          'senderID': '100008188842131',
+          'body': '!wquote',
+          'threadID': '100008188842131',
+          'messageID': 'mid.1462455891719:f316e8c3c1f98e1c27',
+          'attachments': [],
+          'timestamp': '1462455891725',
+          'isGroup': false
+        }
+      },
+      '!wquote-1-arg': {
+        'message':'!wquote 15',
+        'event':{
+          'type': 'message',
+          'senderID': '100008188842131',
+          'body': '!wquote 15',
+          'threadID': '100008188842131',
+          'messageID': 'mid.1462455930968:864e2bb2fabb893766',
+          'attachments': [],
+          'timestamp': '1462455930975',
+          'isGroup': false
+        }
+      },
+      '!wquote-extra-arg': {
+        'message':'!wquote 15 hi',
+        'event':{
+          'type': 'message',
+          'senderID': '100008188842131',
+          'body': '!wquote 15 hi',
+          'threadID': '100008188842131',
+          'messageID': 'mid.1462456064474:3d0dcceb2a8367b761',
+          'attachments': [],
+          'timestamp': '1462456064478',
+          'isGroup': false
+        }
+      },
+      '!ship-no-arg': {
+        'message':'!wquote 15',
+        'event':{
+          'type': 'message',
+          'senderID': '100008188842131',
+          'body': '!wquote 15',
+          'threadID': '100008188842131',
+          'messageID': 'mid.1462455930968:864e2bb2fabb893766',
+          'attachments': [],
+          'timestamp': '1462455930975',
+          'isGroup': false
+        }
+      },
+      '!ship-1-arg': {
+        'message':'!ship hi',
+        'event':{
+          'type': 'message',
+          'senderID': '100008188842131',
+          'body': '!ship hi',
+          'threadID': '100008188842131',
+          'messageID': 'mid.1462456017548:488d0bc7fafcb77405',
+          'attachments': [],
+          'timestamp': '1462456017554',
+          'isGroup': false
+        }
+      },
+      '!ship-2-arg': {
+        'message':'!ship Me You',
+        'event':{
+          'type': 'message',
+          'senderID': '100008188842131',
+          'body': '!ship Me You',
+          'threadID': '100008188842131',
+          'messageID': 'mid.1462456136188:e939b116f6fe8b8512',
+          'attachments': [],
+          'timestamp': '1462456136199',
+          'isGroup': false
+        }
+      },
+      '!ship-multiple-arg': {
+        'message':'!ship Me You Them',
+        'event':{
+          'type': 'message',
+          'senderID': '100008188842131',
+          'body': '!ship Me You Them',
+          'threadID': '100008188842131',
+          'messageID': 'mid.1462456180272:7f84ca93e05397f698',
+          'attachments': [],
+          'timestamp': '1462456180279',
+          'isGroup': false
+        }
+      }
+    };
 
-    let gb = new Bot('GHUM Bot', api);
+    let gb = new Bot('GHUM Bot', api, tests);
     gb.command('!wquote', wquote, '!wquote')
       .command('!dict', dictcc, '!dict <from> <to> <text>')
       .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
@@ -200,7 +293,7 @@ catch (err) {
   }, {
     name: 'password',
       hidden: true,//so we don't see the user's password when they type it in
-      conform: function (value) {
+      conform: function () {
         'use strict';
         return true;
       }
