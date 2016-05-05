@@ -4,14 +4,40 @@ var splitargs = require('string-argv');
 
 module.exports = class Bot {
 
-  constructor(name) {
+  constructor(name, api) {
     this.name = name;
     this.scripts = new Map();
+    this.eventScripts = new Map();
+    this.botAPI = {
+      api: api,
+      sendMessage: this.sendMessage.bind(this),
+      getUserByName: 'hi'
+    };
+
 
     this.command.bind(this);
+    this.event.bind(this);
     this.run.bind(this);
+    this.listen.bind(this);
 
     this.command('!help', this.help.bind(this), '!help');
+    this.listen();
+  }
+
+  listen() {
+    this.botAPI.api.setOptions({
+      logLevel: 'silent',
+      selfListen: false,
+      listenEvents: true
+    });
+
+    this.botAPI.api.listen(function(err, event) {
+      if(err)
+        return console.log(err);
+
+      this.run(event.body, event);
+         
+    }.bind(this));
   }
 
   command(name, func, usage) {
@@ -22,12 +48,30 @@ module.exports = class Bot {
     return this;
   }
 
-  run(command, api, message) {
-    let args = splitargs(command);
-    let scriptName = args[0];
+  event(func, type) {
+    if (this.eventScripts.get(type)) 
+      this.eventScripts.get(type).push(func);
+    else
+      this.eventScripts.set(type, [func]);
+    return this;
+  }
 
-    if(this.scripts.get(scriptName)) {
-      this.scripts.get(scriptName).call(args.slice(1), api, message);
+  run(message, event) {
+
+    if (event.type !== 'message' && this.eventScripts.get(event.type)) {
+      this.eventScripts.get(event.type).forEach((func) => {
+        func(this.botAPI, event);
+      });
+    } else if (message == null) {
+      return;
+    } else {
+      console.log('Got a message from', event.senderID, ':', event.body);
+      let args = splitargs(message);
+      let scriptName = args[0];
+
+      if (this.scripts.get(scriptName)) {
+        this.scripts.get(scriptName).call(args.slice(1), this.botAPI, event);
+      }
     }
   }
 
@@ -52,5 +96,15 @@ module.exports = class Bot {
         (err) => { if (err) return console.log(err); });
     }
   }
+
+  sendMessage(message, threadID, callback) {
+    this.botAPI.api.sendMessage(message, threadID, (err) => {
+      if(err)
+        return console.log(err);
+      else if(callback)
+        return callback(err);
+    });
+  }
+
 };
 

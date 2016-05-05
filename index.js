@@ -5,18 +5,8 @@ var dict = require('dictcc-js');
 var Bot = require('./bot.js');
 
 
-function sendMessage(message, api, threadID, callback) {
-  'use strict';
-  api.sendMessage(message, threadID, (err) => {
-    if(err)
-      return console.log(err);
-    else if(callback)
-      return callback(err);
-  });
-}
 
-
-function wquote(args, api, message) {
+function wquote(args, botAPI, message) {
   'use strict';
   let data = fs.readFileSync('quotes.txt', 'utf8');
   const re = /\n\d+\./;
@@ -27,52 +17,51 @@ function wquote(args, api, message) {
     if(!isNaN(number) && number >= 1 && number <= split.length)
       index = number - 1;
   }
-  sendMessage(index + 1 + '. ' + split[index], api, message.threadID);
+  botAPI.sendMessage(index + 1 + '. ' + split[index], message.threadID);
 }
 
-function dictcc(args, api, message) {
+function dictcc(args, botAPI, message) {
   'use strict';
   if (args < 3) 
-    return sendMessage('Oh no! Check your arguments.', api, message.threadID);
+    return botAPI.sendMessage('Oh no! Check your arguments.', message.threadID);
 
   //Translates the text using the dictionary.
   dict.translate(args.shift(), args.shift(), args.join('+'), (data, err) => {
     if (err) {
       console.log(err);
-      return sendMessage('Oh no! An error occurred!', api, message.threadID);
+      return botAPI.sendMessage('Oh no! An error occurred!', message.threadID);
     }
     if(data !== null && data.length > 0){
       let msg = {
         body: 'Top definition: ' + data[0].from + ' = ' + data[0].to,
       };
-      return sendMessage(msg, api, message.threadID);
+      return botAPI.sendMessage(msg, message.threadID);
     }
     else
-      return sendMessage('Oh no! No definitions found.', api, message.threadID);
+      return botAPI.sendMessage('Oh no! No definitions found.', message.threadID);
   }); 
 }
 
-function ship(args, api, message) {
+function ship(args, botAPI, message) {
   'use strict';
   //Filters out "and"s from the arguments. Note: determine if this is a good idea.
   args = args.filter((value) => {return value !== 'and';});
 
   //Checks if there are still 2 names to ship
   if(args.length >= 2) {
-    sendMessage(args.splice(0, args.length - 1).join(', ') + ', and ' + args[args.length - 1] + 
+    botAPI.sendMessage(args.splice(0, args.length - 1).join(', ') + ', and ' + args[args.length - 1] + 
       '\nsittin\' in a tree,' + 
       '\nK-I-S-S-I-N-G.' + 
       '\nFirst comes love,' + 
       '\nThen comes marriage,' + 
       '\nThen comes a baby' + 
-      '\nIn a baby carriage.', 
-      api,
+      '\nIn a baby carriage.',
       message.threadID);
   }
   else
 
     //Sends a generic heart
-    sendMessage('────(ღ)(ღ)(ღ)────(ღ)(ღ)(ღ) __ ɪƒ ƴσυ\'ʀє αʟσηє,' + 
+    botAPI.sendMessage('────(ღ)(ღ)(ღ)────(ღ)(ღ)(ღ) __ ɪƒ ƴσυ\'ʀє αʟσηє,' + 
       '\n──(ღ)██████(ღ)(ღ)██████(ღ) ɪ\'ʟʟ ɓє ƴσυʀ ѕɧα∂σѡ.' + 
       '\n─(ღ)████████(ღ)████████(ღ) ɪƒ ƴσυ ѡαηт тσ cʀƴ,' + 
       '\n─(ღ)██████████████████(ღ) ɪ\'ʟʟ ɓє ƴσυʀ ѕɧσυʟ∂єʀ.' + 
@@ -82,33 +71,30 @@ function ship(args, api, message) {
       '\n────────(ღ)████(ღ) __ ɪ\'ʟʟ ɓє ƴσυʀ ѕɱɪʟє.' + 
       '\n─────────(ღ)██(ღ) ɓυт αηƴтɪɱє ƴσυ ηєє∂ α ƒʀɪєη∂,' + 
       '\n───────────(ღ) __ ɪ\'ʟʟ ʝυѕт ɓє ɱє.\n',
-      api,
       message.threadID);
 }
 
-function note(args, api, message) {
+function note(args, botAPI, message) {
   'use strict';
   // Make sure correct number of arguments
   if(args.length < 2) {
-    sendMessage('Oh no, an error occurred!',
-      api,
+    botAPI.sendMessage('Oh no, an error occurred!',
       message.threadID);
   }
   else {
     let name = args[0];
     let note = args.slice(1).join(' ');
     if (!note) {
-      sendMessage('No note specified!',
-        api,
+      botAPI.sendMessage('No note specified!',
         message.threadID);
     }
-    api.getThreadInfo(message.threadID, (err, res) => {
+    botAPI.api.getThreadInfo(message.threadID, (err, res) => {
       if(err)
         return console.log(err);
       else {
         let pid = res.participantIDs;
         for (var i = 0; i < pid.length; i++) {
-          api.getUserInfo(pid[i], (err, res) => {
+          botAPI.api.getUserInfo(pid[i], (err, res) => {
             if(err)
               return console.log(err);
             else {
@@ -133,7 +119,7 @@ function note(args, api, message) {
                   fs.writeFileSync('notes.json', JSON.stringify(notes));
                 }
 
-                sendMessage('Note for ' + res.name + ' set.', api, message.threadID);
+                botAPI.sendMessage('Note for ' + res.name + ' set.', message.threadID);
               }
             }
           });
@@ -143,21 +129,40 @@ function note(args, api, message) {
   }
 }
 
+function sendNote (botAPI, message) {
+  'use strict';
+  botAPI.api.getUserInfo(message.from, (err, res) => {
 
+    if (err) {
+      console.log(err);
+    }
+    else {
+      console.log(res[message.from].name + ' was typing in thread ' + message.threadID);
+      try {
+        let notes = JSON.parse(fs.readFileSync('notes.json', 'utf8'));
+        if (notes[message.from].length > 0) {
+          let response = 'Hey, ' + res[message.from].name + '! Here are some notes for you!\n';
+          while (notes[message.from][0]) {
+            response += '\t"'  + notes[message.from][0] + '"\n';
+            notes[message.from].shift();
+          }
+         botAPI.sendMessage(response, message.from);
+         fs.writeFileSync('notes.json', JSON.stringify(notes));
+        }
+      } catch (err) {
+        console.log(err);
+      }
+     
+    }
+    
+  });
+}
 
 
 //where credentials is the user's credentials as an object, fields `email` and `password
 function authenticate(credentials){
   'use strict';
   login(credentials, function(err, api) {
-
-
-    let gb = new Bot('GHUM Bot');
-    gb.command('!wquote', wquote, '!wquote')
-      .command('!dict', dictcc, '!dict <from> <to> <text>')
-      .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
-      .command('!note', note, '!note <name> <note>');
-
     if(err) return console.error(err);
 
     if(credentials.email)
@@ -165,53 +170,15 @@ function authenticate(credentials){
 
     console.log('Logged in'); //we've authenticated
 
-    api.setOptions({
-      logLevel: 'silent',
-      selfListen: false,
-      listenEvents: true
-    });
 
-    api.listen(function(err, message) {//this function is called whenever we get a message
-      if(err)
-        return console.log(err);
+    let gb = new Bot('GHUM Bot', api);
+    gb.command('!wquote', wquote, '!wquote')
+      .command('!dict', dictcc, '!dict <from> <to> <text>')
+      .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
+      .command('!note', note, '!note <name> <note>')
+      .event(sendNote, 'typ');
 
 
-      if(message.type === 'typ') {
-
-        api.getUserInfo(message.from, (err, res) => {
-
-          if (err) {
-            console.log(err);
-          }
-          else {
-            console.log(res[message.from].name + ' was typing in thread ' + message.threadID);
-            try {
-              let notes = JSON.parse(fs.readFileSync('notes.json', 'utf8'));
-              if (notes[message.from].length > 0) {
-                let response = 'Hey, ' + res[message.from].name + '! Here are some notes for you!\n';
-                while (notes[message.from][0]) {
-                  response += '\t"'  + notes[message.from][0] + '"\n';
-                  notes[message.from].shift();
-                }
-               sendMessage(response, api, message.from);
-               fs.writeFileSync('notes.json', JSON.stringify(notes));
-              }
-            } catch (err) {
-              console.log(err);
-            }
-           
-          }
-          
-        });
-
-      }
-      if(message.type !== 'message' || !message.body)
-        return;
-      console.log('Got a message from', message.senderID, ':', message.body);
-
-      gb.run(message.body, api, message);
-         
-    });
   });
 
 }
