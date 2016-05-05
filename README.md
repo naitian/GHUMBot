@@ -26,7 +26,23 @@ For wquote to work, make a quotes.txt file and add quotes in the following forma
     + Constructs new Bot with `name`. Must also pass in the facebook-chat-api `api` object upon `login`
 - `Bot.prototype.command(name, func, usage)`
     + Register a user-facing command called by `name`. `func` is the function ran upon the command being called in a message. `usage` is the usage for the command, used when generating the dynamic help menu.
+    + Each registered function can take 3 arguments:
+        * `args`
+            - an array of arguments, as processed by `string-argv`
+        * `botAPI`
+            - the `botAPI` in the Bot class
+        * `message`
+            - the event object
     + Ex: `gb.command('!dict', dictcc, '!dict <from> <to> <text>'` would register a command called "!dict". This means `dictcc()` would be run every time someone types "!dict" in a messenger chat with your bot. The usage will appear in the help menu.
+    + Ex: Running `!dict en de Hello` would run `dictcc` and the `args` argument would contain `['en', 'de', 'hello']`
+- `Bot.prototype.event(func, eventType)`
+    + Register a function that runs upon an event firing
+    + See all events at the docs for [facebook-chat-api](https://github.com/Schmavery/facebook-chat-api/blob/master/DOCS.md)
+- `Bot.prototype.botAPI`
+    + Gets passed into every function
+    + `Bot.prototype.botAPI.api`
+        * The API provided by facebook-chat-api
+    + `Bot.prototype.botAPI.sendMessage(message, threadID, [callback])`
 
 ## Contributing
 
