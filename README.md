@@ -18,19 +18,32 @@ For wquote to work, make a quotes.txt file and add quotes in the following forma
     
 !!! Warning: This bot does *not* abide by the Facebook terms and conditions. It's entirely that Facebook will think you are infected by a virus, and block you from posting any links (speaking from experience here).
 
-##Contributing
+## About the `Bot` class
+
+`Bot` is a class that helps maintain a readable bot, while adding some extra features like automatic `!help` menu generation, as well as some convenience helper methods. Here are the methods and fields in the `Bot` class.
+
+- `Bot.prototype.constructor(name, api)`
+    + Constructs new Bot with `name`. Must also pass in the facebook-chat-api `api` object upon `login`
+- `Bot.prototype.command(name, func, usage)`
+    + Register a user-facing command called by `name`. `func` is the function ran upon the command being called in a message. `usage` is the usage for the command, used when generating the dynamic help menu.
+    + Ex: `gb.command('!dict', dictcc, '!dict <from> <to> <text>'` would register a command called "!dict". This means `dictcc()` would be run every time someone types "!dict" in a messenger chat with your bot. The usage will appear in the help menu.
+
+## Contributing
 
 Adding new comands is relatively easy. In `index.js`, new commands are assigned to `gb`, which is a `Bot`. There is a section in the code that looks like this: 
 ```javascript
     gb.command('!wquote', wquote, '!wquote')
       .command('!dict', dictcc, '!dict <from> <to> <text>')
       .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
-      .command('!note', note, '!note <name> <note>');
+      .command('!note', note, '!note <name> <note>')
+      .event(sendNote, 'type');
 ```
 
 To add a new command, simply append another `.command()` function. Define the function where the code gets executed elsewhere in `index.js`. The first argument is the actual command being run. The second argument is the function that gets executed when someone calls the command. The third argument is usage that the `Bot` class uses to automatically generate a help screen.
+
 
 ##To-Do
 - [ ] Further refactoring (Help needed!!!)
 - [ ] Color changing functionality
 - [ ] Improved note functionality
+- [ ] Add helper methods to botAPI
