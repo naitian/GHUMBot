@@ -2,6 +2,11 @@ var login = require('facebook-chat-api');
 var prompt = require('prompt');
 var fs = require('fs');
 var dict = require('dictcc-js');
+var urlify = require('urlify').create({
+  'addEToUmlauts': true,
+  'szToSS': true,
+  'spaces': '+'
+});
 var Bot = require('./bot.js');
 
 
@@ -26,7 +31,11 @@ function dictcc(args, botAPI, message) {
     return botAPI.sendMessage('Oh no! Check your arguments.', message.threadID);
 
   //Translates the text using the dictionary.
-  dict.translate(args.shift(), args.shift(), args.join('+'), (data, err) => {
+  let fromLang = args.shift();
+  let toLang = args.shift();
+  let endpoint = urlify(args.join(' '));
+
+  dict.translate(fromLang, toLang, endpoint, (data, err) => {
     if (err) {
       console.log(err);
       return botAPI.sendMessage('Oh no! An error occurred!', message.threadID);
@@ -270,15 +279,9 @@ function authenticate(credentials){
       .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
       .command('!note', note, '!note <name> <note>')
       .event(sendNote, 'typ');
-
-
   });
 
 }
-
-
-
-
 
 try {
   authenticate({appState: JSON.parse(fs.readFileSync('appstate.json', 'utf8'))});
