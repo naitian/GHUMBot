@@ -58,7 +58,7 @@ function ship(args, botAPI, message) {
 
   //Checks if there are still 2 names to ship
   if(args.length >= 2) {
-    botAPI.sendMessage(args.splice(0, args.length - 1).join(', ') + ', and ' + args[args.length - 1] + 
+    botAPI.sendMessage(args.splice(0, args.length - 1).join(', ') + ' and ' + args[args.length - 1] + 
       '\nsittin\' in a tree,' + 
       '\nK-I-S-S-I-N-G.' + 
       '\nFirst comes love,' + 
