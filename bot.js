@@ -11,7 +11,7 @@ module.exports = class Bot {
     this.botAPI = {
       api: api,
       sendMessage: this.sendMessage.bind(this),
-      getUserByName: 'hi'
+      getUserByName: this.getUserByName.bind(this)
     };
     
 
@@ -38,7 +38,7 @@ module.exports = class Bot {
 
     this.botAPI.api.listen(function(err, event) {
       if(err)
-        return console.log(err);
+        return console.error(err);
 
       this.run(event.body, event);
          
@@ -67,17 +67,17 @@ module.exports = class Bot {
     // console.log('{\n\t\'message\':\'' + messageText + 
     //   '\',\n\t\'event\':' + JSON.stringify(event, null, 2).replace(/"/g, '\'') + '\n}');
 
-    if (event.type !== 'message' && this.eventScripts.get(event.type)) {
+    if (this.eventScripts.get(event.type)) {
       this.eventScripts.get(event.type).forEach((func) => {
         func(this.botAPI, event);
       });
-    } else if (messageText == null) {
+    } 
+    if (messageText == null || event.type !== 'message') {
       return;
     } else {
       console.log('Got a message from', event.senderID, ':', event.body);
       let args = splitargs(messageText);
       let scriptName = args[0];
-
       if (this.scripts.get(scriptName)) {
         this.scripts.get(scriptName).call(args.slice(1), this.botAPI, event);
       }
@@ -89,12 +89,36 @@ module.exports = class Bot {
   sendMessage(message, threadID, callback) {
     this.botAPI.api.sendMessage(message, threadID, (err) => {
       if(err)
-        return console.log(err);
+        return console.error(err);
       else if(callback)
         return callback(err);
     });
   }
 
+
+  getUserByName(name, threadID, callback) {
+    this.botAPI.api.getThreadInfo(threadID, (err, res) => {
+      if(err)
+        return console.error(err);
+      else {
+        let pid = res.participantIDs;
+        for (var i = 0; i < pid.length; i++) {
+          this.botAPI.api.getUserInfo(pid[i], (err, res) => {
+            if(err)
+              return console.error(err);
+            else {
+              let id = Object.keys(res)[0];
+              res = res[Object.keys(res)[0]];
+              res.id = id;
+              if(res.name.toLowerCase().indexOf(name.toLowerCase()) > -1) {
+                callback(res);
+              }
+            }
+          });
+        }
+      }
+    });
+  }
 
 // Built-in commands: help and test
   help(args, botAPI, event) {
@@ -118,15 +142,13 @@ module.exports = class Bot {
   }
 
   test() {
-    console.log(this.tests);
     Object.keys(this.tests).forEach((key) => {
 
       try {
         let val = this.tests[key];
-        console.log(val.event);
         this.run(val.message, val.event);
       } catch (err) {
-        console.log(err);
+        console.error(err);
       }
     });
   }

@@ -97,65 +97,45 @@ function note(args, botAPI, message) {
       botAPI.sendMessage('No note specified!',
         message.threadID);
     }
-    botAPI.api.getThreadInfo(message.threadID, (err, res) => {
-      if(err)
-        return console.log(err);
-      else {
-        let pid = res.participantIDs;
-        for (var i = 0; i < pid.length; i++) {
-          botAPI.api.getUserInfo(pid[i], (err, res) => {
-            if(err)
-              return console.log(err);
-            else {
-              let id = Object.keys(res)[0];
-              res = res[Object.keys(res)[0]];
-
-              if(res.name.toLowerCase().indexOf(name.toLowerCase()) > -1) {
-                console.log('Best match for ' + name  + ' is ' + res.name + '. ID: ' +
-                 id);
-                try {
-                  let notes = JSON.parse(fs.readFileSync('notes.json', 'utf8'));
-                  if (notes[id]) {
-                    notes[id].push(note);
-                  }
-                  else {
-                    notes[id] = [note];
-                  }
-                  fs.writeFileSync('notes.json', JSON.stringify(notes));
-                } catch (err) {
-                  let notes = {};
-                  notes[id] = [note];
-                  fs.writeFileSync('notes.json', JSON.stringify(notes));
-                }
-
-                botAPI.sendMessage('Note for ' + res.name + ' set.', message.threadID);
-              }
-            }
-          });
+    botAPI.getUserByName(name, message.threadID, (res) => {
+      let id = res.id;  
+      try {
+        let notes = JSON.parse(fs.readFileSync('notes.json', 'utf8'));
+        if (notes[id]) {
+          notes[id].push(note);
         }
+        else {
+          notes[id] = [note];
+        }
+        fs.writeFileSync('notes.json', JSON.stringify(notes));
+      } catch (err) {
+        let notes = {};
+        notes[id] = [note];
+        fs.writeFileSync('notes.json', JSON.stringify(notes));
       }
+
+      botAPI.sendMessage('Note for ' + res.name + ' set.', message.threadID);
     });
   }
 }
 
 function sendNote (botAPI, message) {
   'use strict';
-  botAPI.api.getUserInfo(message.from, (err, res) => {
+  botAPI.api.getUserInfo(message.senderID, (err, res) => {
 
     if (err) {
       console.log(err);
     }
     else {
-      console.log(res[message.from].name + ' was typing in thread ' + message.threadID);
       try {
         let notes = JSON.parse(fs.readFileSync('notes.json', 'utf8'));
-        if (notes[message.from].length > 0) {
-          let response = 'Hey, ' + res[message.from].name + '! Here are some notes for you!\n';
-          while (notes[message.from][0]) {
-            response += '\t"'  + notes[message.from][0] + '"\n';
-            notes[message.from].shift();
+        if (notes[message.senderID].length > 0) {
+          let response = 'Hey, ' + res[message.senderID].name + '! Here are some notes for you!\n';
+          while (notes[message.senderID][0]) {
+            response += '\t"'  + notes[message.senderID][0] + '"\n';
+            notes[message.senderID].shift();
           }
-         botAPI.sendMessage(response, message.from);
+         botAPI.sendMessage(response, message.senderID);
          fs.writeFileSync('notes.json', JSON.stringify(notes));
         }
       } catch (err) {
@@ -278,7 +258,7 @@ function authenticate(credentials){
       .command('!dict', dictcc, '!dict <from> <to> <text>')
       .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
       .command('!note', note, '!note <name> <note>')
-      .event(sendNote, 'typ');
+      .event(sendNote, 'message');
   });
 
 }
