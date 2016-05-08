@@ -384,7 +384,6 @@ function authenticate(credentials){
       .command('!dict', dictcc, '!dict <from> <to> <text>')
       .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
       .command('!note', note, '!note <name> <note>')
-      .command('!score', score, '!score add <name> OR !score sub <name> OR !score list [number]')
       .event(sendNote, 'message');
   });
 
