@@ -11,7 +11,8 @@ module.exports = class Bot {
     this.botAPI = {
       api: api,
       sendMessage: this.sendMessage.bind(this),
-      getUserByName: this.getUserByName.bind(this)
+      getUserByName: this.getUserByName.bind(this),
+      getName: this.getName.bind(this)
     };
     
 
@@ -118,6 +119,10 @@ module.exports = class Bot {
         }
       }
     });
+  }
+
+  getName() {
+    return this.name;
   }
 
 // Built-in commands: help and test

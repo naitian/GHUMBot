@@ -57,8 +57,10 @@ function ship(args, botAPI, message) {
   args = args.filter((value) => {return value !== 'and';});
 
   //Checks if there are still 2 names to ship
-  if(args.length >= 2) {
-    botAPI.sendMessage(args.splice(0, args.length - 1).join(', ') + ' and ' + args[args.length - 1] + 
+
+  if (args.length >= 2) {
+    botAPI.sendMessage(args.splice(0, args.length - 1).join(', ') + 
+      ' and ' + args[args.length - 1] + 
       '\nsittin\' in a tree,' + 
       '\nK-I-S-S-I-N-G.' + 
       '\nFirst comes love,' + 
@@ -147,6 +149,130 @@ function sendNote (botAPI, message) {
   });
 }
 
+function score(args, botAPI, message) {
+  'use strict';
+  switch(args[0]){
+    case 'add':
+      if (args[1]) {
+        botAPI.getUserByName(args[1], message.threadID, (res) => {
+          let threadID = message.threadID;
+          try {
+            let scores = JSON.parse(fs.readFileSync('scores.json', 'utf8'));
+
+            if (typeof(scores[threadID]) !== 'undefined'){
+              if (scores[threadID][res.id]) {
+                scores[threadID][res.id].score++;
+              }
+              else {
+                scores[threadID][res.id] = {
+                  'name': res.name,
+                  'score': 1
+                };
+              }
+            }
+            else {
+              scores[threadID] = {};
+              scores[threadID][res.id] = {
+                'name': res.name,
+                'score': 1
+              };
+            }
+            fs.writeFileSync('scores.json', JSON.stringify(scores));
+            botAPI.sendMessage(`${res.name}'s score is now ${scores[threadID][res.id].score}`, 
+              message.threadID);
+          } catch (err) {
+            let scores = {};
+            scores[threadID] = {};
+            scores[threadID][res.id] = {
+              'name': res.name,
+              'score': 1
+            };
+            fs.writeFileSync('scores.json', JSON.stringify(scores));
+            botAPI.sendMessage(`${res.name}'s score is now ${scores[threadID][res.id].score}`, 
+              message.threadID);
+          }
+        });
+      }
+      else
+        botAPI.sendMessage('Check your arguments!', message.threadID);
+      break;
+    case 'sub':
+      if (args[1]) {
+        botAPI.getUserByName(args[1], message.threadID, (res) => {
+          let threadID = message.threadID;
+          try {
+            let scores = JSON.parse(fs.readFileSync('scores.json', 'utf8'));
+
+            if (typeof(scores[threadID]) !== 'undefined'){
+              if (scores[threadID][res.id]) {
+                scores[threadID][res.id].score--;
+              }
+              else {
+                scores[threadID][res.id] = {
+                  'name': res.name,
+                  'score': -1
+                };
+              }
+            }
+            else {
+              scores[threadID] = {};
+              scores[threadID][res.id] = {
+                'name': res.name,
+                'score': -1
+              };
+            }
+            fs.writeFileSync('scores.json', JSON.stringify(scores));
+            botAPI.sendMessage(`${res.name}'s score is now ${scores[threadID][res.id].score}`, 
+              message.threadID);
+          } catch (err) {
+            let scores = {};
+            scores[threadID] = {};
+            scores[threadID][res.id] = {
+              'name': res.name,
+              'score': -1
+            };
+            fs.writeFileSync('scores.json', JSON.stringify(scores));
+            botAPI.sendMessage(`${res.name}'s score is now ${scores[threadID][res.id].score}`, 
+              message.threadID);
+          }
+        });
+      }
+      else
+        botAPI.sendMessage('Check your arguments!', message.threadID);
+      break;
+    case 'list':
+      try {
+        let scores = JSON.parse(fs.readFileSync('scores.json', 'utf8'));
+        let length = args[1] || 5;
+        let sortable = [];
+        for (let person in scores[message.threadID]) {
+          sortable.push(scores[message.threadID][person]);
+        }
+
+
+        sortable.sort((a, b) => {
+          return b.score - a.score;
+        });
+        length = Math.min(sortable.length, length);
+
+        let response = botAPI.getName() + ' Leaderboard\n=======================';
+
+        for (var i = 0; i < length; i++) {
+          response += (`\n${sortable[i].name}: ${sortable[i].score}`);
+        }
+        botAPI.sendMessage(response, message.threadID);
+
+      } catch (err) {
+        botAPI.sendMessage('No scores registered!', message.threadID);
+      }
+      
+      
+      break;
+    default:
+      botAPI.sendMessage('Oh no, an error occured!', message.threadID);
+      break;
+  }
+}
 
 //where credentials is the user's credentials as an object, fields `email` and `password
 function authenticate(credentials){
@@ -258,6 +384,7 @@ function authenticate(credentials){
       .command('!dict', dictcc, '!dict <from> <to> <text>')
       .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
       .command('!note', note, '!note <name> <note>')
+      .command('!score', score, '!score add <name> OR !score sub <name> OR !score list [number]')
       .event(sendNote, 'message');
   });
 
