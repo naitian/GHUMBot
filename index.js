@@ -13,7 +13,7 @@ var Bot = require('./bot.js');
 
 function wquote(args, botAPI, message) {
   'use strict';
-  let data = fs.readFile('quotes.txt', 'utf8');
+  let data = fs.readFileSync('quotes.txt', 'utf8');
   const re = /\n\d+\./;
   let split = data.split(re).slice(1);
   let index = Math.floor(Math.random() * (split.length - 1));
