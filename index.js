@@ -13,7 +13,7 @@ var Bot = require('./bot.js');
 
 function wquote(args, botAPI, message) {
   'use strict';
-  let data = fs.readFileSync('quotes.txt', 'utf8');
+  let data = fs.readFile('quotes.txt', 'utf8');
   const re = /\n\d+\./;
   let split = data.split(re).slice(1);
   let index = Math.floor(Math.random() * (split.length - 1));
@@ -124,7 +124,6 @@ function note(args, botAPI, message) {
 function sendNote (botAPI, message) {
   'use strict';
   botAPI.api.getUserInfo(message.senderID, (err, res) => {
-
     if (err) {
       console.log(err);
     }
@@ -149,93 +148,64 @@ function sendNote (botAPI, message) {
   });
 }
 
+
+function changeScore(botAPI, message, name, amt) {
+  'use strict';
+  let thread = message.threadID;
+  botAPI.getUserByName(name, thread, (res) => {
+    if (res.id === message.senderID && amt > 0)
+      amt = -10;
+    try {
+      let scores = JSON.parse(fs.readFileSync('scores.json', 'utf8'));
+
+      if (typeof(scores[thread]) !== 'undefined'){
+        if (scores[thread][res.id]) {
+          scores[thread][res.id].score += amt;
+        }
+        else {
+          scores[thread][res.id] = {
+            'name': res.name,
+            'score': amt
+          };
+        }
+      }
+      else {
+        scores[thread] = {};
+        scores[thread][res.id] = {
+          'name': res.name,
+          'score': amt
+        };
+      }
+      fs.writeFileSync('scores.json', JSON.stringify(scores));
+      botAPI.sendMessage(`${res.name}'s score is now ${scores[thread][res.id].score}`, 
+        thread);
+    } catch (err) {
+      let scores = {};
+      scores[thread] = {};
+      scores[thread][res.id] = {
+        'name': res.name,
+        'score': amt
+      };
+      fs.writeFileSync('scores.json', JSON.stringify(scores));
+      botAPI.sendMessage(`${res.name}'s score is now ${scores[thread][res.id].score}`, 
+        thread);
+    }
+  });
+}
+
 function score(args, botAPI, message) {
   'use strict';
   switch(args[0]){
     case 'add':
       if (args[1]) {
-        botAPI.getUserByName(args[1], message.threadID, (res) => {
-          let threadID = message.threadID;
-          try {
-            let scores = JSON.parse(fs.readFileSync('scores.json', 'utf8'));
-
-            if (typeof(scores[threadID]) !== 'undefined'){
-              if (scores[threadID][res.id]) {
-                scores[threadID][res.id].score++;
-              }
-              else {
-                scores[threadID][res.id] = {
-                  'name': res.name,
-                  'score': 1
-                };
-              }
-            }
-            else {
-              scores[threadID] = {};
-              scores[threadID][res.id] = {
-                'name': res.name,
-                'score': 1
-              };
-            }
-            fs.writeFileSync('scores.json', JSON.stringify(scores));
-            botAPI.sendMessage(`${res.name}'s score is now ${scores[threadID][res.id].score}`, 
-              message.threadID);
-          } catch (err) {
-            let scores = {};
-            scores[threadID] = {};
-            scores[threadID][res.id] = {
-              'name': res.name,
-              'score': 1
-            };
-            fs.writeFileSync('scores.json', JSON.stringify(scores));
-            botAPI.sendMessage(`${res.name}'s score is now ${scores[threadID][res.id].score}`, 
-              message.threadID);
-          }
-        });
+        changeScore(botAPI, message, args[1], 1);
       }
       else
         botAPI.sendMessage('Check your arguments!', message.threadID);
       break;
     case 'sub':
       if (args[1]) {
-        botAPI.getUserByName(args[1], message.threadID, (res) => {
-          let threadID = message.threadID;
-          try {
-            let scores = JSON.parse(fs.readFileSync('scores.json', 'utf8'));
-
-            if (typeof(scores[threadID]) !== 'undefined'){
-              if (scores[threadID][res.id]) {
-                scores[threadID][res.id].score--;
-              }
-              else {
-                scores[threadID][res.id] = {
-                  'name': res.name,
-                  'score': -1
-                };
-              }
-            }
-            else {
-              scores[threadID] = {};
-              scores[threadID][res.id] = {
-                'name': res.name,
-                'score': -1
-              };
-            }
-            fs.writeFileSync('scores.json', JSON.stringify(scores));
-            botAPI.sendMessage(`${res.name}'s score is now ${scores[threadID][res.id].score}`, 
-              message.threadID);
-          } catch (err) {
-            let scores = {};
-            scores[threadID] = {};
-            scores[threadID][res.id] = {
-              'name': res.name,
-              'score': -1
-            };
-            fs.writeFileSync('scores.json', JSON.stringify(scores));
-            botAPI.sendMessage(`${res.name}'s score is now ${scores[threadID][res.id].score}`, 
-              message.threadID);
-          }
-        });
+        changeScore(botAPI, message, args[1], -1);
       }
       else
         botAPI.sendMessage('Check your arguments!', message.threadID);
@@ -273,6 +243,9 @@ function score(args, botAPI, message) {
       break;
   }
 }
+
+
+
 
 //where credentials is the user's credentials as an object, fields `email` and `password
 function authenticate(credentials){
@@ -384,6 +357,7 @@ function authenticate(credentials){
       .command('!dict', dictcc, '!dict <from> <to> <text>')
       .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
       .command('!note', note, '!note <name> <note>')
+      .command('!score', score, '!score add <name> OR !score sub <name> OR !score list [num]')
       .event(sendNote, 'message');
   });
 
