@@ -63,3 +63,4 @@ To add a new command, simply append another `.command()` function. Define the fu
 - [ ] Color changing functionality
 - [ ] Improved note functionality
 - [ ] Add helper methods to botAPI
+- [ ] Cache user-list so call to API is not needed to fetch user info every time.

@@ -278,6 +278,21 @@ function score(args, botAPI, message) {
   }
 }
 
+function ban(args, botAPI, message) {
+  'use strict';
+  if (args.length < 2)
+    return botAPI.sendMessage('Check your args.', message.threadID);
+  let name = args[0];
+  let time = args[1];
+
+  botAPI.getUserByName(name, message.threadID, (res) => {
+    botAPI.ban(res.id, message.threadID, time, (err) => {
+      if (err)
+        return console.error(err);
+      botAPI.sendMessage('Welcome back!', message.threadID);
+    });
+  });
+}
 
 
 
@@ -392,6 +407,7 @@ function authenticate(credentials){
       .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
       .command('!note', note, '!note <name> <note>')
       .command('!score', score, '!score add <name> OR !score sub <name> OR !score list [num]')
+      .command('!ban', ban, '!ban <name> <time>')
       .event(sendNote, 'message');
   });
 
@@ -420,4 +436,3 @@ catch (err) {
     }
   );
 }
-

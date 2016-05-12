@@ -12,7 +12,8 @@ module.exports = class Bot {
       api: api,
       sendMessage: this.sendMessage.bind(this),
       getUserByName: this.getUserByName.bind(this),
-      getName: this.getName.bind(this)
+      getName: this.getName.bind(this),
+      ban: this.ban.bind(this)
     };
     
 
@@ -125,6 +126,25 @@ module.exports = class Bot {
     return this.name;
   }
 
+  ban(userID, threadID, time, callback) {
+    console.log('hi');
+    this.botAPI.api.addUserToGroup('100011682500413', '1265170750179147', (err) => {
+      console.log(err);
+    });
+    return;
+    if (userID === this.botAPI.api.getCurrentUserID())
+      return;
+    this.botAPI.api.removeUserFromGroup(userID, threadID, (err) => {
+      if (err)
+        return console.error(err);
+      setTimeout(() => {
+        this.botAPI.api.addUserToGroup(userID, threadID, (err) => {
+          if (callback)
+            callback(err);
+        });
+      }, time);
+    });
+  }
 // Built-in commands: help and test
   help(args, botAPI, event) {
     if (args.length > 0) {
