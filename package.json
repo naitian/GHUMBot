@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TJDevClub/facebook-chat-api-lesson.git"
+    "url": "git+https://github.com/naitian/GHUMBot.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/TJDevClub/facebook-chat-api-lesson/issues"
+    "url": "https://github.com/naitian/GHUMBot/issues"
   },
-  "homepage": "https://github.com/TJDevClub/facebook-chat-api-lesson#readme",
+  "homepage": "https://github.com/naitian/GHUMBot#readme",
   "dependencies": {
     "dictcc-js": "^1.0.0",
     "facebook-chat-api": "^1.0.8",
