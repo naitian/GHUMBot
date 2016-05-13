@@ -2,6 +2,7 @@ var login = require('facebook-chat-api');
 var prompt = require('prompt');
 var fs = require('fs');
 var dict = require('dictcc-js');
+var storage = require('node-persist');
 var urlify = require('urlify').create({
   'addEToUmlauts': true,
   'szToSS': true,
@@ -105,35 +106,34 @@ function note(args, botAPI, message) {
     }
     botAPI.getUserByName(name, message.threadID, (res) => {
       let id = res.id;  
-      try {
-        fs.readFile('notes.json', 'utf8', (err, data) => {
-          if(err)
-            return console.error(err);
-          let notes = JSON.parse(data);
+      storage.getItem('notes', (err, notes) => {
+        if (err)
+          return console.error(err);
+        if (!notes) {
+          notes = {};
+          notes[id] = {};
+          notes[id][message.threadID] = [note];
+        }
+        else {
           if (notes[id]) {
-            notes[id].push(note);
+            if (notes[id][message.threadID])
+              notes[id][message.threadID].push(note);
+            else {
+              notes[id][message.threadID] = [note];
+            }
           }
           else {
-            notes[id] = [note];
+            notes[id] = {};
+            notes[id][message.threadID] = [note];
           }
-          fs.writeFile('notes.json', JSON.stringify(notes), (err) => {
-            if(err)
-              return console.error(err);
-            else
-              botAPI.sendMessage('Note for ' + res.name + ' set.', message.threadID);
-          });
-        });
-        
-      } catch (err) {
-        let notes = {};
-        notes[id] = [note];
-        fs.writeFile('notes.json', JSON.stringify(notes), (err) => {
+        }
+        storage.setItem('notes', notes, (err) => {
           if(err)
             return console.error(err);
           else
-            botAPI.sendMessage('Note for ' + res.name + ' set.', message.threadID);
+            return botAPI.sendMessage('Note for ' + res.name + ' set.', message.threadID);
         });
-      }
+      });
     });
   }
 }
@@ -145,30 +145,29 @@ function sendNote (botAPI, message) {
       console.log(err);
     }
     else {
-      try {
-        fs.readFile('notes.json', 'utf8', (err, data) => {
-          if (err)
-            return console.error(err);
-          let notes = JSON.parse(data);
-          if (notes[message.senderID].length > 0) {
+      storage.getItem('notes', (err, notes) => {
+        if (err)
+          return console.error(err);
+        if (!notes)
+          return;
+        if (notes[message.senderID] && notes[message.senderID][message.threadID]) {
+          if (notes[message.senderID][message.threadID].length > 0) {
             let response = 'Hey, ' + 
-              res[message.senderID].name + 
-              '! Here are some notes for you!\n';
-            while (notes[message.senderID][0]) {
-              response += '\t"'  + notes[message.senderID][0] + '"\n';
-              notes[message.senderID].shift();
+            res[message.senderID].name + 
+            '! Here are some notes for you!\n';
+            while (notes[message.senderID][message.threadID][0]) {
+              response += '\t"'  + notes[message.senderID][message.threadID][0] + '"\n';
+              notes[message.senderID][message.threadID].shift();
             }
-           botAPI.sendMessage(response, message.senderID);
-           fs.writeFile('notes.json', JSON.stringify(notes));
+            botAPI.sendMessage(response, message.threadID);
+            storage.setItem('notes', notes, (err) => {
+              if (err)
+                console.error(err);
+            });
           }
-        });
-        
-      } catch (err) {
-        console.log(err);
-      }
-     
+        }
+      });
     }
-    
   });
 }
 
@@ -178,49 +177,47 @@ function changeScore(botAPI, message, name, amt) {
   botAPI.getUserByName(name, thread, (res) => {
     if (res.id === message.senderID && amt > 0)
       amt = -10;
-    try {
-      fs.readFile('scores.json', 'utf8', (err, data) => {
-        if (err)
-          return console.error(err);
-        let scores = JSON.parse(data);
-        if (typeof(scores[thread]) !== 'undefined'){
-          if (scores[thread][res.id]) {
-            scores[thread][res.id].score += amt;
-          } else {
-            scores[thread][res.id] = {
-              'name': res.name,
-              'score': amt
-            };
-          }
+
+    storage.getItem('scores', (err, scores) => {
+      if (err)
+        return console.error(err);
+      if (!scores) {
+        scores = {};
+        scores[thread] = {};
+        scores[thread][res.id] = {
+          'name': res.name,
+          'score': amt
+        };
+        storage.setItem('scores', scores, (err) => {
+          if (err)
+            console.error(err);
+          botAPI.sendMessage(`${res.name}'s score is now ${scores[thread][res.id].score}`, 
+            thread);
+        });
+      }
+      else if (typeof(scores[thread]) !== 'undefined') {
+        if (scores[thread][res.id]) {
+          scores[thread][res.id].score += amt;
         } else {
-          scores[thread] = {};
           scores[thread][res.id] = {
             'name': res.name,
             'score': amt
           };
         }
-        fs.writeFile('scores.json', JSON.stringify(scores), (err) => {
-          if (err)
-            return console.error(err);
-          botAPI.sendMessage(`${res.name}'s score is now ${scores[thread][res.id].score}`, 
-            thread);
-        }); 
-      });
-    } catch (err) {
-      let scores = {};
-      scores[thread] = {};
-      scores[thread][res.id] = {
-        'name': res.name,
-        'score': amt
-      };
-      fs.writeFile('scores.json', JSON.stringify(scores), (err) => {
+      } else {
+        scores[thread] = {};
+        scores[thread][res.id] = {
+          'name': res.name,
+          'score': amt
+        };
+      }
+      storage.setItem('scores', scores, (err) => {
         if (err)
-          console.error(err);
+          return console.error(err);
         botAPI.sendMessage(`${res.name}'s score is now ${scores[thread][res.id].score}`, 
           thread);
       });
-      
-    }
+    });
   });
 }
 
@@ -242,35 +239,31 @@ function score(args, botAPI, message) {
         botAPI.sendMessage('Check your arguments!', message.threadID);
       break;
     case 'list':
-      try {
+      storage.getItem('scores', (err, scores) => {
+        if (err)
+          return console.error(err);
+        if (!scores)
+          return botAPI.sendMessage('No scores registered!', message.threadID);
 
-        fs.readFile('scores.json', 'utf8', (err, data) => {
-          if (err)
-            return console.error(err);
-          let scores = JSON.parse(data);
-          let length = args[1] || 5;
-          let sortable = [];
-          for (let person in scores[message.threadID]) {
-            sortable.push(scores[message.threadID][person]);
-          }
+        let length = args[1] || 5;
+        let sortable = [];
+        for (let person in scores[message.threadID]) {
+          sortable.push(scores[message.threadID][person]);
+        }
 
 
-          sortable.sort((a, b) => {
-            return b.score - a.score;
-          });
-          length = Math.min(sortable.length, length);
+        sortable.sort((a, b) => {
+          return b.score - a.score;
+        });
+        length = Math.min(sortable.length, length);
 
-          let response = botAPI.getName() + ' Leaderboard\n=======================';
+        let response = botAPI.getName() + ' Leaderboard\n=======================';
 
-          for (var i = 0; i < length; i++) {
-            response += (`\n${sortable[i].name}: ${sortable[i].score}`);
-          }
-          botAPI.sendMessage(response, message.threadID);
-        });    
-
-      } catch (err) {
-        botAPI.sendMessage('No scores registered!', message.threadID);
-      } 
+        for (var i = 0; i < length; i++) {
+          response += (`\n${sortable[i].name}: ${sortable[i].score}`);
+        }
+        botAPI.sendMessage(response, message.threadID);
+      });
       break;
     default:
       botAPI.sendMessage('Oh no, an error occured!', message.threadID);
@@ -306,6 +299,9 @@ function authenticate(credentials){
       fs.writeFileSync('appstate.json', JSON.stringify(api.getAppState()));
 
     console.log('Logged in'); //we've authenticated
+
+    storage.initSync();
+    console.log('Storage Initiated');
 
     let tests = {
       '!wquote-no-arg': {

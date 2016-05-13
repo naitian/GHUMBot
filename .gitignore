@@ -7,8 +7,5 @@ quotes.txt
 #appstate
 appstate.json
 
-#notes file
-notes.json
-
-#scores file
-scores.json
+#Storage
+/persist

@@ -44,6 +44,32 @@ For wquote to work, make a quotes.txt file and add quotes in the following forma
         * The API provided by facebook-chat-api
     + `Bot.prototype.botAPI.sendMessage(message, threadID, [callback])`
 
+## Data Storage
+
+Certain features such as `!note`, `!score`, etc. require persistent storage. The [node-persist](https://github.com/simonlast/node-persist) library is used for this purpose. The data is organized as such:
+
+Notes:
+```javascript
+    notes {
+        [id] {
+            [threadID] : ['note', 'note', 'note'], // Array of notes
+            ... 
+        },
+        ...
+    }
+```
+
+Scores:
+```javascript
+    notes {
+        [id] {
+            [threadID] : ['note', 'note', 'note'], // Array of notes
+            ... 
+        },
+        ...
+    }
+```
+
 ## Contributing
 
 Adding new comands is relatively easy. In `index.js`, new commands are assigned to `gb`, which is a `Bot`. There is a section in the code that looks like this: 
