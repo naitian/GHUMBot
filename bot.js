@@ -130,17 +130,14 @@ module.exports = class Bot {
         const thread = users[threadID];
         let possible = [];
         for (var user in thread) {
-          thread[user].names.forEach((val) => {
-            let match = false;
-            if (val.toLowerCase().indexOf(name.toLowerCase()) > -1) {
-              match = true;
-            }
-            if (match) {
-              let person = thread[user].account;
-              person.id = user;
-              possible.push(person);
-            }
+          let match = thread[user].names.some((val) => {
+            return val.toLowerCase().indexOf(name.toLowerCase()) > -1;
           });
+          if (match) {
+            let person = thread[user].account;
+            person.id = user;
+            possible.push(person);
+          }
         }
         if (possible.length > 0)
           callback(null, possible);
