@@ -131,7 +131,11 @@ module.exports = class Bot {
         let possible = [];
         for (var user in thread) {
           thread[user].names.forEach((val) => {
+            let match = false;
             if (val.toLowerCase().indexOf(name.toLowerCase()) > -1) {
+              match = true;
+            }
+            if (match) {
               let person = thread[user].account;
               person.id = user;
               possible.push(person);
