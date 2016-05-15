@@ -61,9 +61,25 @@ Notes:
 
 Scores:
 ```javascript
-    notes {
-        [id] {
-            [threadID] : ['note', 'note', 'note'], // Array of notes
+    scores {
+        [threadID] {
+            [id] : {
+                'name': <full name>,
+                'score': <score>
+            }, 
+            ... 
+        },
+        ...
+    }
+```
+
+User Cache:
+```javascript
+    users {
+        [threadID] {
+            [id] : {
+                'names': ['name', 'name', 'name'],
+            }, 
             ... 
         },
         ...

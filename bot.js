@@ -1,6 +1,6 @@
 'use strict';
 var splitargs = require('string-argv');
-
+var storage = require('node-persist');
 
 module.exports = class Bot {
 
@@ -13,7 +13,8 @@ module.exports = class Bot {
       sendMessage: this.sendMessage.bind(this),
       getUserByName: this.getUserByName.bind(this),
       getName: this.getName.bind(this),
-      ban: this.ban.bind(this)
+      ban: this.ban.bind(this),
+      cache: this.cacheUserList.bind(this)
     };
     
 
@@ -21,6 +22,7 @@ module.exports = class Bot {
     this.event.bind(this);
     this.run.bind(this);
     this.listen.bind(this);
+    this.fillUserInfo.bind(this);
 
     if (tests) {
       this.tests = tests;
@@ -28,6 +30,7 @@ module.exports = class Bot {
     }
     this.command('!help', this.help.bind(this), '!help');
 
+    storage.initSync();
     this.listen();
   }
 
@@ -145,6 +148,60 @@ module.exports = class Bot {
       }, time);
     });
   }
+
+  fillUserInfo(threadID) {
+    storage.getItem('users', (err, users) => {
+      if (err)
+        return console.error(err);
+      this.botAPI.api.getThreadInfo(threadID, (err, res) => {
+        if (err)
+          return console.error(err);
+        console.log('\tRetrieved Group Data');  
+        res.participantIDs.forEach((val) => {
+          storage.getItem('users', (err, users) => {
+            if (!users[threadID][val]) {
+              users[threadID][val] = {};
+              users[threadID][val].names = new Set();
+            }
+            else {
+              users[threadID][val].names = new Set(users[threadID][val].names);
+            }
+            if (res.nicknames[val]) {
+              users[threadID][val].names.add(res.nicknames[val]);
+            }
+
+            this.botAPI.api.getUserInfo(val, (err, user) => {
+              if (err)
+                return console.error(err);
+              users[threadID][val].names.add(user[val].name);
+              users[threadID][val].names = Array.from(users[threadID][val].names);
+              storage.setItem('users', users);
+              console.log('\t' + val + ' caching complete');
+            }); 
+          });
+        });
+      });
+    });
+  }
+
+  cacheUserList(threadID) {
+    console.log('Caching Users');
+    storage.getItem('users', (err, users) => {
+      console.log('\tRetrieved Users Object');
+      if (err)
+        return console.error(err);
+      if (!users) {
+        users = {};
+        users[threadID] = {};
+        storage.setItem('users', users);
+      }
+      this.fillUserInfo(threadID);
+    });
+
+  }
+
+  
+
 // Built-in commands: help and test
   help(args, botAPI, event) {
     if (args.length > 0) {

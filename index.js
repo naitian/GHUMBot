@@ -287,6 +287,11 @@ function ban(args, botAPI, message) {
   });
 }
 
+function cache(botAPI, event) {
+  'use strict';
+  if (event.logMessageType !== 'log:thread-name')
+    botAPI.cache(event.threadID);
+}
 
 
 //where credentials is the user's credentials as an object, fields `email` and `password
@@ -403,6 +408,7 @@ function authenticate(credentials){
       .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
       .command('!note', note, '!note <name> <note>')
       .command('!score', score, '!score add <name> OR !score sub <name> OR !score list [num]')
+      .event(cache, 'event')
       .event(sendNote, 'message');
   });
 
