@@ -102,27 +102,49 @@ module.exports = class Bot {
 
 
   getUserByName(name, threadID, callback) {
-    this.botAPI.api.getThreadInfo(threadID, (err, res) => {
-      if(err)
-        return console.error(err);
-      else {
-        let pid = res.participantIDs;
-        for (var i = 0; i < pid.length; i++) {
-          this.botAPI.api.getUserInfo(pid[i], (err, res) => {
-            if(err)
-              return console.error(err);
-            else {
-              let id = Object.keys(res)[0];
-              res = res[Object.keys(res)[0]];
-              res.id = id;
-              if(res.name.toLowerCase().indexOf(name.toLowerCase()) > -1) {
-                callback(res);
-              }
+    storage.getItem('users', (err, users) => {
+      if (!users || !users[threadID]) {
+        this.cacheUserList(threadID);
+        this.botAPI.api.getThreadInfo(threadID, (err, res) => {
+          if(err)
+            return console.error(err);
+          else {
+            let pid = res.participantIDs;
+            for (var i = 0; i < pid.length; i++) {
+              this.botAPI.api.getUserInfo(pid[i], (err, res) => {
+                if(err)
+                  return console.error(err);
+                else {
+                  let id = Object.keys(res)[0];
+                  res = res[Object.keys(res)[0]];
+                  res.id = id;
+                  if(res.name.toLowerCase().indexOf(name.toLowerCase()) > -1) {
+                    callback(null, res);
+                  }
+                }
+              });
+            }
+          }
+        }); 
+      } else {
+        const thread = users[threadID];
+        let possible = [];
+        for (var user in thread) {
+          thread[user].names.forEach((val) => {
+            if (val.toLowerCase().indexOf(name.toLowerCase()) > -1) {
+              let person = thread[user].account;
+              person.id = user;
+              possible.push(person);
             }
           });
         }
+        if (possible.length > 0)
+          callback(null, possible);
+        else 
+          callback('No users found!', null);
       }
     });
+    
   }
 
   getName() {
@@ -130,7 +152,6 @@ module.exports = class Bot {
   }
 
   ban(userID, threadID, time, callback) {
-    console.log('hi');
     this.botAPI.api.addUserToGroup('100011682500413', '1265170750179147', (err) => {
       console.log(err);
     });
@@ -175,6 +196,7 @@ module.exports = class Bot {
                 return console.error(err);
               users[threadID][val].names.add(user[val].name);
               users[threadID][val].names = Array.from(users[threadID][val].names);
+              users[threadID][val].account = user[val];
               storage.setItem('users', users);
               console.log('\t' + val + ' caching complete');
             }); 
@@ -206,8 +228,6 @@ module.exports = class Bot {
   help(args, botAPI, event) {
     if (args.length > 0) {
       if (this.scripts.get(args[0])) {
-        console.log(args[0]);
-        console.log(this.scripts.get(args[0]));
         botAPI.sendMessage(this.name + ' Help!' + 
           '\n\t' + this.scripts.get(args[0]).usage,
           event.threadID);

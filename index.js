@@ -104,8 +104,20 @@ function note(args, botAPI, message) {
       botAPI.sendMessage('No note specified!',
         message.threadID);
     }
-    botAPI.getUserByName(name, message.threadID, (res) => {
-      let id = res.id;  
+    botAPI.getUserByName(name, message.threadID, (err, res) => {
+      if (err)
+        return console.error(err);
+
+      if (res.length > 1) {
+        let response = 'There is more than one person by that name!\nDo you mean:\n';
+        res.forEach((val) => {
+          response += '\t- ' + val.name + '\n';
+        });
+        botAPI.sendMessage(response, message.threadID);
+        return;
+      }
+
+      let id = res[0].id;  
       storage.getItem('notes', (err, notes) => {
         if (err)
           return console.error(err);
@@ -131,7 +143,7 @@ function note(args, botAPI, message) {
           if(err)
             return console.error(err);
           else
-            return botAPI.sendMessage('Note for ' + res.name + ' set.', message.threadID);
+            return botAPI.sendMessage('Note for ' + res[0].name + ' set.', message.threadID);
         });
       });
     });
@@ -142,7 +154,7 @@ function sendNote (botAPI, message) {
   'use strict';
   botAPI.api.getUserInfo(message.senderID, (err, res) => {
     if (err) {
-      console.log(err);
+      console.error(err);
     }
     else {
       storage.getItem('notes', (err, notes) => {
@@ -174,8 +186,20 @@ function sendNote (botAPI, message) {
 function changeScore(botAPI, message, name, amt) {
   'use strict';
   let thread = message.threadID;
-  botAPI.getUserByName(name, thread, (res) => {
-    if (res.id === message.senderID && amt > 0)
+  botAPI.getUserByName(name, thread, (err, res) => {
+    if (err)
+      return console.error(err);
+
+    if (res.length > 1) {
+      let response = 'There is more than one person by that name!\nDo you mean:\n';
+      res.forEach((val) => {
+        response += '\t- ' + val.name + '\n';
+      });
+      botAPI.sendMessage(response, message.threadID);
+      return;
+    }
+
+    if (res[0].id === message.senderID && amt > 0)
       amt = -10;
 
     storage.getItem('scores', (err, scores) => {
@@ -184,37 +208,31 @@ function changeScore(botAPI, message, name, amt) {
       if (!scores) {
         scores = {};
         scores[thread] = {};
-        scores[thread][res.id] = {
-          'name': res.name,
+        scores[thread][res[0].id] = {
+          'name': res[0].name,
           'score': amt
         };
-        storage.setItem('scores', scores, (err) => {
-          if (err)
-            console.error(err);
-          botAPI.sendMessage(`${res.name}'s score is now ${scores[thread][res.id].score}`, 
-            thread);
-        });
       }
       else if (typeof(scores[thread]) !== 'undefined') {
-        if (scores[thread][res.id]) {
-          scores[thread][res.id].score += amt;
+        if (scores[thread][res[0].id]) {
+          scores[thread][res[0].id].score += amt;
         } else {
-          scores[thread][res.id] = {
-            'name': res.name,
+          scores[thread][res[0].id] = {
+            'name': res[0].name,
             'score': amt
           };
         }
       } else {
         scores[thread] = {};
-        scores[thread][res.id] = {
-          'name': res.name,
+        scores[thread][res[0].id] = {
+          'name': res[0].name,
           'score': amt
         };
       }
       storage.setItem('scores', scores, (err) => {
         if (err)
           return console.error(err);
-        botAPI.sendMessage(`${res.name}'s score is now ${scores[thread][res.id].score}`, 
+        botAPI.sendMessage(`${res[0].name}'s score is now ${scores[thread][res[0].id].score}`, 
           thread);
       });
     });
@@ -278,7 +296,9 @@ function ban(args, botAPI, message) {
   let name = args[0];
   let time = args[1];
 
-  botAPI.getUserByName(name, message.threadID, (res) => {
+  botAPI.getUserByName(name, message.threadID, (err, res) => {
+    if (err)
+      console.error(err);
     botAPI.ban(res.id, message.threadID, time, (err) => {
       if (err)
         return console.error(err);
