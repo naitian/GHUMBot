@@ -175,6 +175,7 @@ module.exports = class Bot {
     storage.getItem('users', (err, users) => {
       if (err)
         return console.error(err);
+      users[threadID] = {};
       this.botAPI.api.getThreadInfo(threadID, (err, res) => {
         if (err)
           return console.error(err);
