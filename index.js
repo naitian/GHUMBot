@@ -8,7 +8,7 @@ var urlify = require('urlify').create({
   'szToSS': true,
   'spaces': '+'
 });
-var Bot = require('./bot.js');
+var Bot = require('botjs');
 
 
 
