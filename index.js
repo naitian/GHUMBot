@@ -9,8 +9,9 @@ var urlify = require('urlify').create({
   'spaces': '+'
 });
 var Bot = require('botjs');
+var MovieGame = new require('./movie.js');
 
-
+var movie = new MovieGame('movie');
 
 function wquote(args, botAPI, message) {
   'use strict';
@@ -42,7 +43,7 @@ function dictcc(args, botAPI, message) {
 
   dict.translate(fromLang, toLang, endpoint, (data, err) => {
     if (err) {
-      console.log(err);
+      console.error(err);
       return botAPI.sendMessage('Oh no! An error occurred!', message.threadID);
     }
     if(data !== null && data.length > 0){
@@ -313,6 +314,38 @@ function cache(botAPI, event) {
     botAPI.cache(event.threadID);
 }
 
+function movieGame(args, botAPI, message) {
+  'use strict';
+  if (movie.gameOn) {
+    if (args[0]) {
+      if (args[0] === 'quit') {
+        movie.gameOn = false;
+        botAPI.sendMessage('Ok, I\'ll stop the game now.', message.threadID);
+        return;
+      }
+    }
+    botAPI.sendMessage('There\'s already a game running. Guess this movie:' + 
+      movie.movie, message.threadID);
+  } else {
+    let newMovie = movie.getNewMovie();
+    movie.gameOn = true;
+
+    botAPI.sendMessage('Guess this movie: ' + newMovie, message.threadID);
+  }
+}
+
+function checkMovie(botAPI, event) {
+  'use strict';
+  if (movie.gameOn) {
+    if (event.body.toLowerCase().indexOf(movie.answer.toLowerCase()) > -1) {
+      botAPI.sendMessage('Correct! Nice Job!', event.threadID);
+      movie.gameOn = false;
+    } else {
+      botAPI.sendMessage('Nope, that\'s not it!', event.threadID);
+    }
+  }
+}
+
 
 //where credentials is the user's credentials as an object, fields `email` and `password
 function authenticate(credentials){
@@ -428,8 +461,10 @@ function authenticate(credentials){
       .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
       .command('!note', note, '!note <name> <note>')
       .command('!score', score, '!score add <name> OR !score sub <name> OR !score list [num]')
+      .command('!game', movieGame, '!game OR !game quit')
       .event(cache, 'event')
-      .event(sendNote, 'message');
+      .event(sendNote, 'message')
+      .event(checkMovie, 'message');
   });
 
 }
