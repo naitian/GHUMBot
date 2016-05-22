@@ -336,7 +336,7 @@ function movieGame(args, botAPI, message) {
 
 function checkMovie(botAPI, event) {
   'use strict';
-  if (movie.gameOn) {
+  if (movie.gameOn && event.body) {
     if (event.body.toLowerCase().indexOf(movie.answer.toLowerCase()) > -1) {
       botAPI.sendMessage('Correct! Nice Job!', event.threadID);
       movie.gameOn = false;
