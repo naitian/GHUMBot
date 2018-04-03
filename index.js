@@ -308,6 +308,10 @@ function ban(args, botAPI, message) {
   });
 }
 
+function hmm(args, botAPI, message) {
+  botAPI.sendMessage('🤔', message.threadID);
+}
+
 function cache(botAPI, event) {
   'use strict';
   if (event.logMessageType !== 'log:thread-name')
@@ -346,10 +350,6 @@ function checkMovie(botAPI, event) {
       botAPI.sendMessage('Nope, that\'s not it!', event.threadID);
     }
   }
-}
-
-function hmm(botAPI, event) {
-  botAPI.sendMessage('🤔', event.threadID);
 }
 
 
