@@ -348,6 +348,10 @@ function checkMovie(botAPI, event) {
   }
 }
 
+function hmm(botAPI, event) {
+  botAPI.sendMessage('🤔', event.threadID);
+}
+
 
 //where credentials is the user's credentials as an object, fields `email` and `password
 function authenticate(credentials){
@@ -369,6 +373,7 @@ function authenticate(credentials){
       .command('!ship', ship, '!ship OR !ship <name 1> <name 2>')
       .command('!note', note, '!note <name> <note>')
       .command('!score', score, '!score add <name> OR !score sub <name> OR !score list [num]')
+      .command('!hmm', hmm, '!hmm')
       .event(cache, 'event')
       .event(sendNote, 'message');
   });
